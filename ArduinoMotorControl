@@ -1,0 +1,43 @@
+#include <ESP8266WiFi.h>
+#include <AccelStepper.h>
+#include <ros.h>
+#include <geometry_msgs/Twist.h>
+
+// Motor pin definitions
+#define motorPin1  2
+#define motorPin2  3
+#define motorPin3  4
+#define motorPin4  5
+#define motorPin5  8
+#define motorPin6  9
+#define motorPin7  10
+#define motorPin8  11
+
+// Define two stepper motors, one for each H-bridge
+AccelStepper stepper1(AccelStepper::FULL4WIRE, motorPin1, motorPin2, motorPin3, motorPin4);
+AccelStepper stepper2(AccelStepper::FULL4WIRE, motorPin5, motorPin6, motorPin7, motorPin8);
+
+ros::NodeHandle nh;
+
+void messageCb(const geometry_msgs::Twist& msg){
+  stepper1.setMaxSpeed(1000.0); // set max speed for safety
+  stepper2.setMaxSpeed(1000.0); // set max speed for safety
+  stepper1.setSpeed(msg.linear.x*50);  // Lower the multiplier to lower the speed
+  stepper2.setSpeed(msg.angular.z*50); // Lower the multiplier to lower the speed
+}
+
+ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &messageCb);
+
+void setup() {
+  nh.initNode();
+  nh.subscribe(sub);
+  stepper1.setAcceleration(100.0); // set acceleration
+  stepper2.setAcceleration(100.0); // set acceleration
+}
+
+void loop() {
+  stepper1.runSpeed();
+  stepper2.runSpeed();
+  nh.spinOnce();
+  delay(1); // Decrease the delay in the main loop
+}
